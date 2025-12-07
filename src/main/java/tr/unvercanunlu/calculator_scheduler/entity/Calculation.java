@@ -17,17 +17,17 @@ import java.util.UUID;
 @Document(collection = "calculations")
 public class Calculation implements Serializable {
 
-    @Id
-    private UUID id;
+  @Id
+  private UUID id;
 
-    private Integer first;
+  private Integer first;
 
-    private Integer second;
+  private Integer second;
 
-    private Integer operationCode;
+  private Integer operationCode;
 
-    private Double result;
+  private Double result;
 
-    private LocalDateTime calculatedDate;
+  private LocalDateTime calculatedDate;
 
 }

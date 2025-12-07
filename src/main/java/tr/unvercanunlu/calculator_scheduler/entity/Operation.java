@@ -15,9 +15,9 @@ import java.io.Serializable;
 @Document(collection = "operations")
 public class Operation implements Serializable {
 
-    @Id
-    private Integer code;
+  @Id
+  private Integer code;
 
-    private String name;
+  private String name;
 
 }

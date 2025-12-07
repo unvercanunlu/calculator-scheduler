@@ -20,81 +20,81 @@ import java.util.stream.IntStream;
 @RequiredArgsConstructor
 public class CalculatorJob implements Job {
 
-    private final Logger logger = LoggerFactory.getLogger(CalculatorJob.class);
+  private final Logger logger = LoggerFactory.getLogger(CalculatorJob.class);
 
-    private static final List<Operation> operationCache = new ArrayList<>();
+  private static final List<Operation> operationCache = new ArrayList<>();
 
-    private final IOperationRepository operationRepository;
+  private final IOperationRepository operationRepository;
 
-    private final ICalculationRepository calculationRepository;
+  private final ICalculationRepository calculationRepository;
 
-    private final Random random = new Random();
+  private final Random random = new Random();
 
-    @Value(value = "#{ ${gap.start} }")
-    private Integer startGap;
+  @Value(value = "#{ ${gap.start} }")
+  private Integer startGap;
 
-    @Value(value = "#{ ${gap.end} }")
-    private Integer endGap;
+  @Value(value = "#{ ${gap.end} }")
+  private Integer endGap;
 
-    @Override
-    public void execute(JobExecutionContext context) {
-        this.logger.info("Calculator job is started.");
+  @Override
+  public void execute(JobExecutionContext context) {
+    this.logger.info("Calculator job is started.");
 
-        if (operationCache.isEmpty()) {
-            this.logger.debug("Operation cache is empty.");
+    if (operationCache.isEmpty()) {
+      this.logger.debug("Operation cache is empty.");
 
-            List<Operation> operations = this.operationRepository.findAll();
+      List<Operation> operations = this.operationRepository.findAll();
 
-            this.logger.debug("All operations in the database are fetched.");
+      this.logger.debug("All operations in the database are fetched.");
 
-            operationCache.addAll(operations);
+      operationCache.addAll(operations);
 
-            this.logger.debug("Operation cache is filled.");
-        }
-
-        int calculationCount = (int) Optional.ofNullable(
-                context.getJobDetail().getJobDataMap().get("calculationCount")
-        ).orElse(1);
-
-        IntStream.range(0, calculationCount).forEach(i -> {
-            Collections.shuffle(operationCache);
-
-            int first = this.startGap + this.random.nextInt(this.endGap);
-            int second = this.startGap + this.random.nextInt(this.endGap);
-
-            Operation operation = operationCache.get(this.random.nextInt(operationCache.size()));
-
-            Double result = switch (operation.getCode()) {
-                case 0 -> (double) first + second;
-                case 1 -> (double) first - second;
-                case 2 -> (double) first * second;
-                case 3 -> (double) first / second;
-                case 4 -> (double) first % second;
-                case 5 -> Math.pow(first, second);
-                case 6 -> (double) (first + second) / 2;
-                case 7 -> (double) Math.max(first, second);
-                case 8 -> (double) Math.min(first, second);
-                default -> null;
-            };
-
-            LocalDateTime calculatedDate = LocalDateTime.now();
-
-            Calculation calculation = Calculation.builder()
-                    .id(UUID.randomUUID())
-                    .first(first)
-                    .second(second)
-                    .operationCode(operation.getCode())
-                    .result(result)
-                    .calculatedDate(calculatedDate)
-                    .build();
-
-            this.logger.debug(calculation + " is created.");
-
-            calculation = this.calculationRepository.save(calculation);
-
-            this.logger.debug(calculation + " is saved to database.");
-        });
-
-        this.logger.info("Calculator job is end.");
+      this.logger.debug("Operation cache is filled.");
     }
+
+    int calculationCount = (int) Optional.ofNullable(
+        context.getJobDetail().getJobDataMap().get("calculationCount")
+    ).orElse(1);
+
+    IntStream.range(0, calculationCount).forEach(i -> {
+      Collections.shuffle(operationCache);
+
+      int first = this.startGap + this.random.nextInt(this.endGap);
+      int second = this.startGap + this.random.nextInt(this.endGap);
+
+      Operation operation = operationCache.get(this.random.nextInt(operationCache.size()));
+
+      Double result = switch (operation.getCode()) {
+        case 0 -> (double) first + second;
+        case 1 -> (double) first - second;
+        case 2 -> (double) first * second;
+        case 3 -> (double) first / second;
+        case 4 -> (double) first % second;
+        case 5 -> Math.pow(first, second);
+        case 6 -> (double) (first + second) / 2;
+        case 7 -> (double) Math.max(first, second);
+        case 8 -> (double) Math.min(first, second);
+        default -> null;
+      };
+
+      LocalDateTime calculatedDate = LocalDateTime.now();
+
+      Calculation calculation = Calculation.builder()
+          .id(UUID.randomUUID())
+          .first(first)
+          .second(second)
+          .operationCode(operation.getCode())
+          .result(result)
+          .calculatedDate(calculatedDate)
+          .build();
+
+      this.logger.debug(calculation + " is created.");
+
+      calculation = this.calculationRepository.save(calculation);
+
+      this.logger.debug(calculation + " is saved to database.");
+    });
+
+    this.logger.info("Calculator job is end.");
+  }
 }

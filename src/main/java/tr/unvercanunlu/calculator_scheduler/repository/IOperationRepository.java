@@ -6,4 +6,5 @@ import tr.unvercanunlu.calculator_scheduler.entity.Operation;
 
 @Repository
 public interface IOperationRepository extends MongoRepository<Operation, Integer> {
+
 }

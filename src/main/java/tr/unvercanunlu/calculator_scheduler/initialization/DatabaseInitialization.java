@@ -25,71 +25,71 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DatabaseInitialization {
 
-    private final Logger logger = LoggerFactory.getLogger(DatabaseInitialization.class);
+  private final Logger logger = LoggerFactory.getLogger(DatabaseInitialization.class);
 
-    private final IOperationRepository operationRepository;
+  private final IOperationRepository operationRepository;
 
-    private final Gson gson = new Gson();
+  private final Gson gson = new Gson();
 
-    @Value(value = "${data.initial.location.operation}")
-    private String filePath;
+  @Value(value = "${data.initial.location.operation}")
+  private String filePath;
 
-    private InputStream getFileAsStream(String filePath) {
-        ClassLoader classLoader = getClass().getClassLoader();
-        return classLoader.getResourceAsStream(filePath);
+  private InputStream getFileAsStream(String filePath) {
+    ClassLoader classLoader = getClass().getClassLoader();
+    return classLoader.getResourceAsStream(filePath);
+  }
+
+  private String readStreamByLine(InputStream stream) {
+    List<String> lines = new ArrayList<>();
+
+    InputStreamReader streamReader = new InputStreamReader(stream, StandardCharsets.UTF_8);
+    BufferedReader reader = new BufferedReader(streamReader);
+
+    try {
+      String line;
+
+      while ((line = reader.readLine()) != null) {
+        lines.add(line);
+      }
+    } catch (IOException e) {
+      this.logger.info("An error is happened while reading the file.");
+
+      throw new RuntimeException("File cannot be read.");
     }
 
-    private String readStreamByLine(InputStream stream) {
-        List<String> lines = new ArrayList<>();
+    return String.join("", lines);
+  }
 
-        InputStreamReader streamReader = new InputStreamReader(stream, StandardCharsets.UTF_8);
-        BufferedReader reader = new BufferedReader(streamReader);
+  @EventListener(value = ApplicationReadyEvent.class)
+  public void initialize() {
+    this.logger.info("Database initializing is started.");
 
-        try {
-            String line;
+    this.logger.debug("File at '" + this.filePath + "' is reading.");
 
-            while ((line = reader.readLine()) != null) {
-                lines.add(line);
-            }
-        } catch (IOException e) {
-            this.logger.info("An error is happened while reading the file.");
+    InputStream stream = this.getFileAsStream(this.filePath);
+    String content = this.readStreamByLine(stream);
 
-            throw new RuntimeException("File cannot be read.");
-        }
+    this.logger.debug("File at '" + this.filePath + "' is read.");
 
-        return String.join("", lines);
-    }
+    this.logger.debug("File content: '" + content + "'.");
 
-    @EventListener(value = ApplicationReadyEvent.class)
-    public void initialize() {
-        this.logger.info("Database initializing is started.");
+    Type typeOfListOfOperations = new TypeToken<List<Operation>>() {
+    }.getType();
 
-        this.logger.debug("File at '" + this.filePath + "' is reading.");
+    List<Operation> operations = this.gson.fromJson(content, typeOfListOfOperations);
 
-        InputStream stream = this.getFileAsStream(this.filePath);
-        String content = this.readStreamByLine(stream);
+    this.logger.debug("'" + content + "' is converted to " + operations);
 
-        this.logger.debug("File at '" + this.filePath + "' is read.");
+    this.operationRepository.deleteAll();
 
-        this.logger.debug("File content: '" + content + "'.");
+    this.logger.debug("All operations in the database are deleted.");
 
-        Type typeOfListOfOperations = new TypeToken<List<Operation>>() {
-        }.getType();
+    operations.forEach(operation -> {
+      this.operationRepository.save(operation);
 
-        List<Operation> operations = this.gson.fromJson(content, typeOfListOfOperations);
+      this.logger.debug(operation + " is saved to database.");
+    });
 
-        this.logger.debug("'" + content + "' is converted to " + operations);
-
-        this.operationRepository.deleteAll();
-
-        this.logger.debug("All operations in the database are deleted.");
-
-        operations.forEach(operation -> {
-            this.operationRepository.save(operation);
-
-            this.logger.debug(operation + " is saved to database.");
-        });
-
-        this.logger.info("Database initializing is end.");
-    }
+    this.logger.info("Database initializing is end.");
+  }
 }
